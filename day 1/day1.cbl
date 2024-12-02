@@ -3,7 +3,7 @@
        AUTHOR. ZACHARY HARDIN.
        DATE-WRITTEN. DEC 1 2025.
       ***************************************************************
-      * PROGRAM TO SOLVE AOC 2025 DAY 1 PROBLEM                     *
+      * PROGRAM TO SOLVE AOC 2024 DAY 1 PROBLEM                     *
       * LINK: https://adventofcode.com/2024/day/1                   *
       *************************************************************** 
        ENVIRONMENT DIVISION.
