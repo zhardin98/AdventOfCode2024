@@ -1,7 +1,7 @@
        IDENTIFICATION DIVISION.
        PROGRAM-ID. HYSTORIAN-HYSTERIA.
        AUTHOR. ZACHARY HARDIN.
-       DATE-WRITTEN. DEC 1 2025.
+       DATE-WRITTEN. DEC 1 2024.
       ***************************************************************
       * PROGRAM TO SOLVE AOC 2024 DAY 1 PROBLEM                     *
       * LINK: https://adventofcode.com/2024/day/1                   *
