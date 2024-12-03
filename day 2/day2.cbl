@@ -38,17 +38,23 @@
        01  WS-REPORT-DIRECTION                  PIC X(1).
            88 INCREASING                                     VALUE '>'.     
            88 DECREASING                                     VALUE '<'.
-       01   WS-SAFE-FLAG                        PIC X(1).
+       01  WS-SAFE-FLAG                         PIC X(1).
            88 SAFE                                           VALUE 'Y'.
            88 UNSAFE                                         VALUE 'N'.
 
-                
+       01  WS-UNSAFE-CNT                        PIC 9(2).            
+       01  WS-REMOVE-LEVEL                      PIC 9(2).
        01  WS-INREC-POINTER                     PIC 9(2).
 
        01  WS-LEVELS.
            05  WS-LEVELS-ARR OCCURS 1002 TIMES  PIC 9(2)  VALUE 0.
+       01  WS-LEVEL2.
+           05  WS-LEVEL2-ARR OCCURS 1002 TIMES  PIC 9(2)  VALUE 0.
+       01  WS-LEVELS-ORIG.
+           05  WS-LEVELO-ARR OCCURS 1002 TIMES  PIC 9(2)  VALUE 0.
        01  WS-ARR-SUB                           PIC 9(4).
        01  WS-ARR-SUB-PLUS-1                    PIC 9(1).
+       01  WS-ARR2-SUB                          PIC 9(4).
        01  WS-SAFE-RPT-CNT                      PIC 9(4)    VALUE 0.
        01  WS-UNSAFE-RPT-CNT                    PIC 9(4)    VALUE 0.
        01  WS-TOTAL-RPT-CNT                     PIC 9(4)    VALUE 0.
@@ -96,6 +102,10 @@
                    SET END-OF-FILE TO TRUE
                NOT AT END
                    MOVE ZEROS TO WS-LEVELS
+                                 WS-LEVEL2
+                                 WS-LEVELS-ORIG
+                                 WS-UNSAFE-CNT
+                   MOVE 1     TO WS-REMOVE-LEVEL
                    PERFORM 2100-PARSE-LEVELS THRU 2100-EXIT
                    PERFORM 2200-CHECK-SAFETY THRU 2200-EXIT  
                    ADD 1 TO WS-TOTAL-RPT-CNT
@@ -141,6 +151,8 @@
                END-EVALUATE
                ADD 1 TO WS-INREC-POINTER
            END-PERFORM
+
+           MOVE WS-LEVELS TO WS-LEVELS-ORIG
            .
        2100-EXIT.
            EXIT.
@@ -190,7 +202,28 @@
            .
        INCREMENT-COUNTERS.
            IF UNSAFE
-               ADD 1 TO WS-UNSAFE-RPT-CNT
+               IF WS-LEVELO-ARR(WS-REMOVE-LEVEL) EQUALS 0
+                   ADD 1 TO WS-UNSAFE-RPT-CNT
+               ELSE
+      *            IF UNSAFE, AND THERE IS MORE DATA WE CAN TRY 
+      *            REMOVING, REMOVE AN ELEMENT FROM THE ARRAY AND 
+      *            TRY AGAIN
+                   MOVE 1 TO WS-ARR-SUB
+                             WS-ARR2-SUB
+                   PERFORM UNTIL WS-LEVELO-ARR(WS-ARR-SUB) EQUALS 0
+                       IF WS-ARR-SUB EQUALS WS-REMOVE-LEVEL
+                           CONTINUE
+                       ELSE
+                           MOVE WS-LEVELO-ARR(WS-ARR-SUB) 
+                                TO WS-LEVEL2-ARR(WS-ARR2-SUB)
+                           ADD 1 TO WS-ARR2-SUB
+                       END-IF
+                       ADD 1 TO WS-ARR-SUB
+                                
+                   END-PERFORM
+                   MOVE WS-LEVEL2 TO WS-LEVELS
+                   ADD 1 TO WS-REMOVE-LEVEL
+                   GO TO 2200-CHECK-SAFETY
            ELSE
                ADD 1 TO WS-SAFE-RPT-CNT
            END-IF
