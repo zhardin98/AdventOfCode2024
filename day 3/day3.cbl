@@ -38,7 +38,10 @@
        01  WS-NUMERIC-FOUND                       PIC X(1).
            88 NUMERIC-FOUND                                 VALUE 'Y'.
            88 NO-NUMERIC-FOUND                              VALUE 'N'.   
-
+       01  WS-COND-FLAG                           PIC X(1).
+           88 DO-RUN                                        VALUE 'Y'.
+           88 DONT-RUN                                      VALUE 'N'.
+           
        01  WS-REC-POINTER                         PIC 9(4).
        01  WS-INS-POINTER                         PIC 9(4).
        01  WS-X-NUM                               PIC 9(9).
@@ -60,6 +63,7 @@
        0000-MAINLINE.
            
            PERFORM 1000-OPEN-FILE      THRU 1000-EXIT
+           SET DO-RUN TO TRUE
            PERFORM 2000-PROCESS-DATA   THRU 2000-EXIT
                UNTIL END-OF-FILE
            PERFORM 8000-DISPLAY-RESULT THRU 8000-EXIT
@@ -102,7 +106,15 @@
            MOVE 1 TO WS-REC-POINTER
            PERFORM UNTIL INPUT-RECORD(WS-REC-POINTER:1) EQUALS 
                                                          C-NEW-LINE-CHAR
-               IF INPUT-RECORD(WS-REC-POINTER:3) EQUALS 'mul'
+               IF INPUT-RECORD(WS-REC-POINTER:4) EQUALS 'do()'
+                   SET DO-RUN TO TRUE
+               END-IF
+
+               IF INPUT-RECORD(WS-REC-POINTER:7) EQUALS 'don''t()'
+                   SET DONT-RUN TO TRUE
+               END-IF
+               
+               IF INPUT-RECORD(WS-REC-POINTER:3) EQUALS 'mul' AND DO-RUN
                    PERFORM 3100-VALIDATE-INSTRUCTION THRU 3100-EXIT
                END-IF
                ADD 1 TO WS-REC-POINTER
