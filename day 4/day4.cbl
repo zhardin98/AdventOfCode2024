@@ -3,7 +3,7 @@
        AUTHOR. ZACHARY HARDIN.
        DATE-WRITTEN. DEC 4 2024.
       ***************************************************************
-      * PROGRAM TO SOLVE AOC 2024 DAY 3 PROBLEM                     *
+      * PROGRAM TO SOLVE AOC 2024 DAY 4 PROBLEM                     *
       * LINK: https://adventofcode.com/2024/day/4                  *
       *************************************************************** 
        ENVIRONMENT DIVISION.
