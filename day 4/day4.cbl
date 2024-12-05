@@ -42,7 +42,8 @@
        01  WS-ARR-SUB                             PIC 9(3) VALUE 1.
        01  WS-ROWS                                PIC 9(3) VALUE 1.
        01  WS-COLS                                PIC 9(3) VALUE 1.
-       01  WS-TOTAL                               PIC 9(8) VALUE 0.
+       01  WS-TOTAL-STRING                        PIC 9(8) VALUE 0.
+       01  WS-TOTAL-CROSSES                       PIC 9(8) VALUE 0.
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
 
@@ -55,7 +56,8 @@
            PERFORM 1000-OPEN-FILE             THRU 1000-EXIT
            PERFORM 2000-CONVERT-FILE-TO-ARRAY THRU 2000-EXIT
                UNTIL END-OF-FILE
-           PERFORM 3000-SCAN-ARRAY            THRU 3000-EXIT
+           PERFORM 3000-SCAN-FOR-STRING       THRU 3000-EXIT
+           PERFORM 4000-SCAN-FOR-CROSS        THRU 4000-EXIT
            PERFORM 8000-DISPLAY-RESULT        THRU 8000-EXIT
            PERFORM 9000-CLOSE-FILE            THRU 9000-EXIT
            .
@@ -93,7 +95,7 @@
       ****************************************************************
       * SEARCH FOR OCCURRENCES OF 'XMAS' THROUGHOUT WORD SEARCH      *
       *****************************************************************
-       3000-SCAN-ARRAY.
+       3000-SCAN-FOR-STRING.
 
            MOVE 1 TO WS-ROWS
            PERFORM UNTIL WS-ROWS EQUALS (WS-ARR-LENGTH + 1)
@@ -171,7 +173,7 @@
            IF   WS-WSA(WS-ROWS - 1)(WS-COLS:1) EQUALS 'M'
            AND  WS-WSA(WS-ROWS - 2)(WS-COLS:1) EQUALS 'A'
            AND  WS-WSA(WS-ROWS - 3)(WS-COLS:1) EQUALS 'S'
-               ADD 1 TO WS-TOTAL
+               ADD 1 TO WS-TOTAL-STRING
            END-IF
            .
        3110-EXIT.
@@ -185,7 +187,7 @@
            IF   WS-WSA(WS-ROWS - 1)(WS-COLS + 1:1) EQUALS 'M'
            AND  WS-WSA(WS-ROWS - 2)(WS-COLS + 2:1) EQUALS 'A'
            AND  WS-WSA(WS-ROWS - 3)(WS-COLS + 3:1) EQUALS 'S'
-                ADD 1 TO WS-TOTAL
+                ADD 1 TO WS-TOTAL-STRING
            END-IF
            .
        3120-EXIT.
@@ -199,7 +201,7 @@
            IF   WS-WSA(WS-ROWS)(WS-COLS + 1:1) EQUALS 'M'
            AND  WS-WSA(WS-ROWS)(WS-COLS + 2:1) EQUALS 'A'
            AND  WS-WSA(WS-ROWS)(WS-COLS + 3:1) EQUALS 'S'
-               ADD 1 TO WS-TOTAL
+               ADD 1 TO WS-TOTAL-STRING
            END-IF
            .
        3130-EXIT.
@@ -213,7 +215,7 @@
            IF   WS-WSA(WS-ROWS + 1)(WS-COLS + 1:1) EQUALS 'M'
            AND  WS-WSA(WS-ROWS + 2)(WS-COLS + 2:1) EQUALS 'A'
            AND  WS-WSA(WS-ROWS + 3)(WS-COLS + 3:1) EQUALS 'S'
-               ADD 1 TO WS-TOTAL
+               ADD 1 TO WS-TOTAL-STRING
            END-IF
            .
        3140-EXIT.
@@ -227,7 +229,7 @@
            IF   WS-WSA(WS-ROWS + 1)(WS-COLS:1) EQUALS 'M'
            AND  WS-WSA(WS-ROWS + 2)(WS-COLS:1) EQUALS 'A'
            AND  WS-WSA(WS-ROWS + 3)(WS-COLS:1) EQUALS 'S'
-               ADD 1 TO WS-TOTAL
+               ADD 1 TO WS-TOTAL-STRING
            END-IF
            .
        3150-EXIT.
@@ -241,7 +243,7 @@
            IF   WS-WSA(WS-ROWS + 1)(WS-COLS - 1:1) EQUALS 'M'
            AND  WS-WSA(WS-ROWS + 2)(WS-COLS - 2:1) EQUALS 'A'
            AND  WS-WSA(WS-ROWS + 3)(WS-COLS - 3:1) EQUALS 'S'
-               ADD 1 TO WS-TOTAL
+               ADD 1 TO WS-TOTAL-STRING
            END-IF
            .
        3160-EXIT.
@@ -255,7 +257,7 @@
            IF   WS-WSA(WS-ROWS)(WS-COLS - 1:1) EQUALS 'M'
            AND  WS-WSA(WS-ROWS)(WS-COLS - 2:1) EQUALS 'A'
            AND  WS-WSA(WS-ROWS)(WS-COLS - 3:1) EQUALS 'S'
-               ADD 1 TO WS-TOTAL
+               ADD 1 TO WS-TOTAL-STRING
            END-IF
            .
        3170-EXIT.
@@ -269,7 +271,7 @@
            IF   WS-WSA(WS-ROWS - 1)(WS-COLS - 1:1) EQUALS 'M'
            AND  WS-WSA(WS-ROWS - 2)(WS-COLS - 2:1) EQUALS 'A'
            AND  WS-WSA(WS-ROWS - 3)(WS-COLS - 3:1) EQUALS 'S'
-               ADD 1 TO WS-TOTAL
+               ADD 1 TO WS-TOTAL-STRING
            END-IF
            .
        3180-EXIT.
@@ -277,11 +279,74 @@
 
 
       ****************************************************************
+      * CHECK FOR MIDDLE OF CROSS                                    *
+      ****************************************************************
+       4000-SCAN-FOR-CROSS.
+
+           MOVE 2 TO WS-ROWS
+           PERFORM UNTIL WS-ROWS EQUALS (WS-ARR-LENGTH)
+               MOVE 2 TO WS-COLS
+               PERFORM UNTIL WS-COLS EQUALS (WS-ARR-LENGTH)
+                   IF WS-WSA(WS-ROWS)(WS-COLS:1) EQUALS 'A'
+                       PERFORM 4100-CHECK-CORNERS THRU 4100-EXIT
+                   END-IF
+                   ADD 1 TO WS-COLS
+               END-PERFORM
+               ADD 1 TO WS-ROWS
+           END-PERFORM
+           .
+       4000-EXIT.
+           EXIT.
+
+      ****************************************************************
+      * CHECK FOR PROPER CORNERS OF THE CROSS                        *
+      ****************************************************************
+       4100-CHECK-CORNERS.
+
+           EVALUATE TRUE
+      *        M S
+      *         A
+      *        M S
+               WHEN WS-WSA(WS-ROWS - 1)(WS-COLS + 1:1) EQUALS 'S'
+                AND WS-WSA(WS-ROWS - 1)(WS-COLS - 1:1) EQUALS 'M'
+                AND WS-WSA(WS-ROWS + 1)(WS-COLS - 1:1) EQUALS 'M'
+                AND WS-WSA(WS-ROWS + 1)(WS-COLS + 1:1) EQUALS 'S' 
+      *        M M
+      *         A
+      *        S S  
+               WHEN WS-WSA(WS-ROWS - 1)(WS-COLS + 1:1) EQUALS 'M'
+                AND WS-WSA(WS-ROWS - 1)(WS-COLS - 1:1) EQUALS 'M'
+                AND WS-WSA(WS-ROWS + 1)(WS-COLS - 1:1) EQUALS 'S'
+                AND WS-WSA(WS-ROWS + 1)(WS-COLS + 1:1) EQUALS 'S'            
+      *        S M
+      *         A
+      *        S M 
+               WHEN WS-WSA(WS-ROWS - 1)(WS-COLS + 1:1) EQUALS 'M'
+                AND WS-WSA(WS-ROWS - 1)(WS-COLS - 1:1) EQUALS 'S'
+                AND WS-WSA(WS-ROWS + 1)(WS-COLS - 1:1) EQUALS 'S'
+                AND WS-WSA(WS-ROWS + 1)(WS-COLS + 1:1) EQUALS 'M' 
+      *        S S
+      *         A
+      *        M M
+               WHEN WS-WSA(WS-ROWS - 1)(WS-COLS + 1:1) EQUALS 'S'
+                AND WS-WSA(WS-ROWS - 1)(WS-COLS - 1:1) EQUALS 'S'
+                AND WS-WSA(WS-ROWS + 1)(WS-COLS - 1:1) EQUALS 'M'
+                AND WS-WSA(WS-ROWS + 1)(WS-COLS + 1:1) EQUALS 'M' 
+                   ADD 1 TO WS-TOTAL-CROSSES
+               WHEN OTHER
+                   CONTINUE
+           END-EVALUATE
+           .
+       4100-EXIT.
+           EXIT.
+
+      ****************************************************************
       * DISPLAY RESULTING SUM OF PRODUCTS                            *
       ****************************************************************
        8000-DISPLAY-RESULT.
 
-           DISPLAY 'TOTAL = ' WS-TOTAL
+           DISPLAY 'TOTAL ''XMAS'' = ' WS-TOTAL-STRING
+           DISPLAY 'TOTAL  X-MAS = ' WS-TOTAL-CROSSES
            .
        8000-EXIT.
            EXIT.
