@@ -61,9 +61,11 @@
            05 WS-ORDER OCCURS 30 TIMES          PIC 9(2).
        01  WS-ORDER-SUB                         PIC 9(2).
        01  WS-ORDER-SUB2                        PIC 9(2).
+       01  WS-TEMP-NUM                          PIC 9(2).
        01  WS-ARR-COUNT                         PIC 9(2).
        
-       01  WS-MID-TOTAL                         PIC 9(6).
+       01  WS-MID-TOTAL-1                       PIC 9(6).
+       01  WS-MID-TOTAL-2                       PIC 9(6).
        01  WS-END                               PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
 
@@ -163,7 +165,6 @@
                    IF WS-RULES(WS-RULES-SUB)(WS-RULES-POINTER:2)
                       EQUALS WS-ORDER(WS-ORDER-SUB)
                        SET INVALID-SEQ TO TRUE
-                       GO TO 3000-EXIT
                    END-IF
                    ADD 2 TO WS-RULES-POINTER
                    END-PERFORM
@@ -174,10 +175,10 @@
            END-PERFORM
 
            IF INVALID-SEQ
-               CONTINUE
+               PERFORM 5000-CORRECT-RECORD THRU 5000-EXIT
            ELSE
                COMPUTE WS-ARR-COUNT = ((WS-ARR-COUNT - 1) / 2) + 1
-               ADD WS-ORDER(WS-ARR-COUNT) TO WS-MID-TOTAL
+               ADD WS-ORDER(WS-ARR-COUNT) TO WS-MID-TOTAL-1
            END-IF
 
            .
@@ -200,10 +201,56 @@
            EXIT.
 
       *****************************************************************
+      * REORDER INVALID SEQUENCES INTO A VALID ORDER                  *
+      *****************************************************************
+       5000-CORRECT-RECORD.
+
+      *    LOOP BACKWARDS THROUGH SEQUENCE TO REORDER
+           MOVE SPACES        TO WS-VALID-SEQ
+           MOVE WS-ARR-COUNT TO WS-ORDER-SUB
+
+           PERFORM UNTIL WS-ORDER-SUB EQUALS 0
+               MOVE WS-ORDER(WS-ORDER-SUB) TO WS-RULES-SUB
+               MOVE 1 TO WS-RULES-POINTER
+      *        SEND SECOND POINTER BACKWARDS
+               SUBTRACT 1 FROM WS-ORDER-SUB GIVING WS-ORDER-SUB2
+               PERFORM UNTIL WS-ORDER-SUB2 EQUALS 0
+      *            CHECK RULES ARRAY FOR RULE THAT 
+      *            POINTER1 MUST PRECEDE POINTER2
+      *            IF SO, SWAP VALUES AND RESTART BACKWARDS LOOP
+                   MOVE WS-ORDER(WS-ORDER-SUB)  TO WS-RULES-SUB
+                   MOVE 1                       TO WS-RULES-POINTER
+                   PERFORM UNTIL 
+                              WS-RULES(WS-RULES-SUB)(WS-RULES-POINTER:2) 
+                              EQUALS SPACES
+                   IF WS-RULES(WS-RULES-SUB)(WS-RULES-POINTER:2)
+                      EQUALS WS-ORDER(WS-ORDER-SUB2)
+                       MOVE WS-ORDER(WS-ORDER-SUB)  TO WS-TEMP-NUM
+                       MOVE WS-ORDER(WS-ORDER-SUB2) TO
+                                                  WS-ORDER(WS-ORDER-SUB) 
+                       MOVE WS-TEMP-NUM             TO 
+                                                 WS-ORDER(WS-ORDER-SUB2)
+                       GO TO 5000-CORRECT-RECORD
+                   END-IF
+                   ADD 2 TO WS-RULES-POINTER
+                   END-PERFORM
+                   SUBTRACT 1 FROM WS-ORDER-SUB2
+               END-PERFORM
+               SUBTRACT 1 FROM WS-ORDER-SUB
+           END-PERFORM
+
+           COMPUTE WS-ARR-COUNT = ((WS-ARR-COUNT - 1) / 2) + 1
+           ADD WS-ORDER(WS-ARR-COUNT) TO WS-MID-TOTAL-2
+           .
+       5000-EXIT.
+           EXIT.
+
+      *****************************************************************
       * DISPLAY RESULTING SUM OF PRODUCTS                             *
       *****************************************************************
        8000-DISPLAY-RESULTS.
-           DISPLAY 'TOTAL OF MIDDLES = ' WS-MID-TOTAL
+           DISPLAY 'TOTAL OF   VALID MIDDLES = ' WS-MID-TOTAL-1
+           DISPLAY 'TOTAL OF INVALID MIDDLES = ' WS-MID-TOTAL-2
            .
        8000-EXIT.
            EXIT.
