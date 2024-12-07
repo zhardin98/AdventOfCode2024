@@ -54,9 +54,18 @@
        01  WS-VISITED-ARR.
            05 WS-VISITED OCCURS 0 TO 130 TIMES 
            DEPENDING ON WS-ARR-LENGTH             PIC X(140).
+       01  WS-VISITED-ARR-BKUP.
+           05 WS-VISITED-BKUP OCCURS 0 TO 130 TIMES 
+           DEPENDING ON WS-ARR-LENGTH             PIC X(140).
        01  WS-VIS-ARR-SUB                         PIC 9(3).
-
+       01  WS-VIS-SUB-CHAR                        PIC 9(3).
        01  WS-STEPS-WALKED                        PIC 9(6).
+       01  WS-OBSTACLES-PLACED                    PIC 9(6).
+
+       01  WS-START-ROW                           PIC 9(3).
+       01  WS-START-COL                           PIC 9(3).
+       01  WS-START-DIR                           PIC X(1).
+       01  WS-STEP-CNT                            PIC 9(5).
 
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
@@ -72,6 +81,7 @@
                UNTIL END-OF-FILE           
            PERFORM 3000-FIND-STARTING-POS     THRU 3000-EXIT
            PERFORM 4000-WALK-GUARD            THRU 4000-EXIT
+           PERFORM 5000-PLACE-OBSTACLES       THRU 5000-EXIT
            PERFORM 8000-DISPLAY-RESULTS       THRU 8000-EXIT
            PERFORM 9000-CLOSE-FILE            THRU 9000-EXIT
            .
@@ -135,6 +145,9 @@
                            SET DIR-RIGHT TO TRUE
                    END-EVALUATE        
                    PERFORM 4100-MARK-VISITED THRU 4100-EXIT  
+                   MOVE WS-MAP-ARR-SUB  TO WS-START-ROW
+                   MOVE WS-MAP-SUB-CHAR TO WS-START-COL
+                   MOVE WS-DIRECTION    TO WS-START-DIR
                    GO TO 3000-EXIT   
                END-IF
                IF WS-MAP-SUB-CHAR EQUALS WS-ARR-LENGTH
@@ -227,6 +240,117 @@
            .
        4100-EXIT.
            EXIT.
+      *****************************************************************
+      * IDENTIFY OBSTACLES TO CAUSE AN INFINITE LOOP                  *
+      *****************************************************************
+       5000-PLACE-OBSTACLES.
+           
+           MOVE WS-VISITED-ARR TO WS-VISITED-ARR-BKUP
+           MOVE 1 TO WS-VIS-ARR-SUB
+
+           PERFORM UNTIL WS-VIS-ARR-SUB  EQUALS (WS-ARR-LENGTH + 1)
+               MOVE 1 TO WS-VIS-SUB-CHAR
+               PERFORM UNTIL WS-VIS-SUB-CHAR EQUALS (WS-ARR-LENGTH + 1)              
+                  IF WS-VISITED(WS-VIS-ARR-SUB)(WS-VIS-SUB-CHAR:1)
+                     NOT EQUAL 0
+                         MOVE '#' 
+                            TO WS-MAP(WS-VIS-ARR-SUB)(WS-VIS-SUB-CHAR:1)
+  
+                         MOVE WS-START-ROW TO WS-MAP-ARR-SUB
+                         MOVE WS-START-COL TO WS-MAP-SUB-CHAR
+                         MOVE WS-START-DIR TO WS-DIRECTION
+TEST       DISPLAY 'ATTEMPTING AT ' WS-VIS-ARR-SUB ' ' WS-VIS-SUB-CHAR  
+                         MOVE 0 TO WS-STEP-CNT                    
+                         PERFORM 5100-WALK-WITH-OBST    THRU 5100-EXIT
+                         MOVE WS-VISITED-ARR-BKUP TO WS-VISITED-ARR
+                         MOVE '.' 
+                            TO WS-MAP(WS-VIS-ARR-SUB)(WS-VIS-SUB-CHAR:1)
+                  END-IF
+                  ADD 1 TO WS-VIS-SUB-CHAR              
+               END-PERFORM               
+               ADD 1 TO WS-VIS-ARR-SUB
+           END-PERFORM
+           .
+       5000-EXIT.
+           EXIT.
+
+      *****************************************************************
+      * DISPLAY RESULTING SUM OF PRODUCTS                             *
+      *****************************************************************
+       5100-WALK-WITH-OBST.
+
+           MOVE WS-MAP-ARR-SUB  TO WS-MAP-ARR-SUB-ORIG
+           MOVE WS-MAP-SUB-CHAR TO WS-MAP-SUB-CHAR-ORIG    
+      *    CHECK IF VISIT TABLE HAS DIRECTION MATCHING THE ONE 
+      *    BEING TRAVELED. 
+      *    IF SO, LEAVE THIS PARA AND LABEL THE BLOCKER
+      *    IF NOT, UPDATE WITH DIRECTION
+TEST  *      DISPLAY WS-MAP-ARR-SUB ' ' WS-MAP-SUB-CHAR
+TEST  *     DISPLAY 'VIS =' WS-VISITED(WS-MAP-ARR-SUB)(WS-MAP-SUB-CHAR:1)
+TEST  *     DISPLAY 'DIR =' WS-DIRECTION
+           IF WS-VISITED(WS-MAP-ARR-SUB)(WS-MAP-SUB-CHAR:1) EQUALS 
+               WS-DIRECTION OR WS-STEP-CNT EQUALS 99999
+TEST           DISPLAY 'LOOP FOUND!'
+               ADD 1 TO WS-OBSTACLES-PLACED
+               GO TO 5100-EXIT
+           ELSE
+               MOVE WS-DIRECTION TO 
+                    WS-VISITED(WS-MAP-ARR-SUB)(WS-MAP-SUB-CHAR:1)
+           END-IF
+
+      *    CHECK IF THERE IS ROOM FOR THE GUARD TO WALK
+      *    IF NOT, GO TO EXIT SO FINISH PARA CAN RUN
+      *    FYI: THESE GO TOS ARE THE ONLY VALID WAY TO LEAVE THIS PARA
+      *         TO RETURN TO 5000 PARA UNLESS THE GUARD IS IN A LOOP
+           EVALUATE TRUE
+               WHEN DIR-UP
+                   IF WS-MAP-ARR-SUB EQUALS 1
+                       GO TO 5100-EXIT
+                   ELSE
+                       SUBTRACT 1 FROM WS-MAP-ARR-SUB
+                   END-IF
+               WHEN DIR-DOWN
+                   IF WS-MAP-ARR-SUB EQUALS WS-ARR-LENGTH
+                       GO TO 5100-EXIT
+                   ELSE
+                       ADD 1 TO WS-MAP-ARR-SUB
+                   END-IF
+               WHEN DIR-LEFT
+                   IF WS-MAP-SUB-CHAR EQUALS 1
+                       GO TO 5100-EXIT
+                   ELSE
+                       SUBTRACT 1 FROM WS-MAP-SUB-CHAR
+                   END-IF
+               WHEN DIR-RIGHT
+                   IF WS-MAP-SUB-CHAR EQUALS WS-ARR-LENGTH
+                       GO TO 5100-EXIT
+                   ELSE                 
+                       ADD 1 TO WS-MAP-SUB-CHAR
+                   END-IF
+           END-EVALUATE
+      *    IF THE GUARD IS NOW STANDING ON AN OBSTACLE, RETURN THEM
+      *    TO THEIR ORIGINAL POSITION AND ROTATE THEM CLOCKWISE
+           IF WS-MAP(WS-MAP-ARR-SUB)(WS-MAP-SUB-CHAR:1) EQUALS '#'
+               MOVE WS-MAP-ARR-SUB-ORIG  TO WS-MAP-ARR-SUB  
+               MOVE WS-MAP-SUB-CHAR-ORIG TO WS-MAP-SUB-CHAR 
+               EVALUATE TRUE
+                   WHEN DIR-UP
+                       SET DIR-RIGHT TO TRUE
+                   WHEN DIR-DOWN
+                       SET DIR-LEFT  TO TRUE
+                   WHEN DIR-LEFT
+                       SET DIR-UP    TO TRUE
+                   WHEN DIR-RIGHT
+                       SET DIR-DOWN  TO TRUE
+               END-EVALUATE
+           END-IF  
+
+      *    REACHING THIS INSTRUCTION MEANS THERE IS MORE MOVEMENT TO DO
+           ADD 1 TO WS-STEP-CNT
+           GO TO 5100-WALK-WITH-OBST
+           .
+       5100-EXIT.
+           EXIT.
 
       *****************************************************************
       * DISPLAY RESULTING SUM OF PRODUCTS                             *
@@ -234,6 +358,7 @@
        8000-DISPLAY-RESULTS.
             
            DISPLAY 'DISTINCT POSITIONS = ' WS-STEPS-WALKED
+           DISPLAY 'ADDED OBSTACLES    = ' WS-OBSTACLES-PLACED
            .
        8000-EXIT.
            EXIT.
