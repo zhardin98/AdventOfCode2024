@@ -1,5 +1,5 @@
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. GUARD-GALLIVC.
+       PROGRAM-ID. GUARD-GALLIVANT.
        AUTHOR. ZACHARY HARDIN.
        DATE-WRITTEN. DEC 6 2024.
       ***************************************************************
