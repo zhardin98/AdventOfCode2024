@@ -51,6 +51,9 @@
        01  WS-FUNC-SUB                            PIC 9(3).
 
        01  WS-PLUS-COUNT                          PIC 9(3).
+       01  WS-CAT-COUNT                           PIC 9(3).
+       01  WS-CAT-VAL-1                           PIC 9(18).
+       01  WS-CAT-VAL-2                           PIC 9(18).       
        
        01  WS-CALIBRATION                         PIC 9(18)  VALUE 0.
        01  WS-END                                 PIC X(25)
@@ -156,11 +159,14 @@
            MOVE WS-VALUES(1) TO WS-SOLUTION
            MOVE 2            TO WS-ARR-SUB
            PERFORM UNTIL WS-VALUES(WS-ARR-SUB) EQUALS 0
-               IF WS-FUNC(WS-FUNC-SUB) EQUALS '+'
-                   ADD WS-VALUES(WS-ARR-SUB) TO WS-SOLUTION
-               ELSE
-                   MULTIPLY WS-VALUES(WS-ARR-SUB) BY WS-SOLUTION
-               END-IF
+               EVALUATE WS-FUNC(WS-FUNC-SUB)
+                   WHEN '+'
+                       ADD WS-VALUES(WS-ARR-SUB) TO WS-SOLUTION
+                   WHEN '*'
+                       MULTIPLY WS-VALUES(WS-ARR-SUB) BY WS-SOLUTION
+                   WHEN '|'
+                       PERFORM 4300-CONCATENATE-VALUES THRU 4300-EXIT
+               END-EVALUATE
                ADD 1 TO WS-ARR-SUB 
                         WS-FUNC-SUB                   
            END-PERFORM  
@@ -169,7 +175,7 @@
                SET RESULT-TRUE TO TRUE  
                ADD WS-SOLUTION TO WS-CALIBRATION
            ELSE
-               PERFORM 4200-INCRMENT-BINARY THRU 4200-EXIT
+               PERFORM 4200-INCRMENT-TERNARY THRU 4200-EXIT
                IF RESULT-FALSE
                    GO TO 4000-EXIT
                END-IF
@@ -200,9 +206,9 @@
        4100-EXIT.
            EXIT.
       ***************************************************************** 
-      * USING BINARY PATTERNS, ICNREMENT + AND/OR *                   *
+      * USING TERNARY PATTERNS, ICNREMENT +M *, AND/OR |              *
       *****************************************************************
-       4200-INCRMENT-BINARY.
+       4200-INCRMENT-TERNARY.
 
            MOVE 1 TO WS-FUNC-SUB
            PERFORM UNTIL WS-FUNC(WS-FUNC-SUB) EQUALS SPACE
@@ -210,11 +216,19 @@
                    MOVE '*' TO WS-FUNC(WS-FUNC-SUB)
                    GO TO 4200-EXIT
                ELSE
-      *            CHECK IF ALL FUNCTIONS ARE *. IF SO, REC DOESN'T WORK   
-                   MOVE 0 TO WS-PLUS-COUNT                 
+                   IF WS-FUNC(WS-FUNC-SUB) EQUALS '*'
+                       MOVE '|' TO WS-FUNC(WS-FUNC-SUB)
+                       GO TO 4200-EXIT
+                   END-IF
+
+      *            CHECK IF ALL FUNCTIONS ARE |. IF SO, REC DOESN'T WORK   
+                   MOVE 0 TO WS-PLUS-COUNT   
+                             WS-CAT-COUNT               
                    INSPECT WS-FUNCTION-ARR
-                   TALLYING WS-PLUS-COUNT FOR ALL '+'          
-                   IF WS-PLUS-COUNT EQUALS 0                                     
+                   TALLYING WS-PLUS-COUNT FOR ALL '+'  
+                   INSPECT WS-FUNCTION-ARR
+                   TALLYING WS-CAT-COUNT  FOR ALL '*'       
+                   IF (WS-PLUS-COUNT + WS-CAT-COUNT) EQUALS 0                                     
                        SET RESULT-FALSE TO TRUE
                        GO TO 4200-EXIT
                    END-IF
@@ -224,6 +238,31 @@
            END-PERFORM
            .
        4200-EXIT.
+           EXIT.
+
+      *****************************************************************
+      * DISPLAY RESULTING SUM OF PRODUCTS                             *
+      *****************************************************************
+       4300-CONCATENATE-VALUES.
+           
+           MOVE WS-SOLUTION          TO WS-CAT-VAL-1
+           MOVE WS-VALUES(WS-ARR-SUB) TO WS-CAT-VAL-2
+
+           EVALUATE TRUE
+               WHEN WS-CAT-VAL-2 GREATER 99
+                   COMPUTE WS-SOLUTION = 
+                           (WS-CAT-VAL-1 * 1000) + WS-CAT-VAL-2
+               WHEN WS-CAT-VAL-2 GREATER 9
+                   COMPUTE WS-SOLUTION = 
+                           (WS-CAT-VAL-1 * 100) + WS-CAT-VAL-2               
+               WHEN OTHER            
+                   COMPUTE WS-SOLUTION = 
+                           (WS-CAT-VAL-1 * 10) + WS-CAT-VAL-2                    
+           END-EVALUATE
+
+
+           .
+       4300-EXIT.
            EXIT.
 
       *****************************************************************
