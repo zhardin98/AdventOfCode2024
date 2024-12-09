@@ -32,9 +32,6 @@
        01  WS-END-OF-FILE                         PIC X(1).
            88 END-OF-FILE                                   VALUE 'Y'.
            88 NOT-END-OF-FILE                               VALUE 'N'.
-       01  WS-END-OF-RECORD                       PIC X(1).
-           88 END-OF-RECORD                                 VALUE 'Y'.
-           88 NOT-END-OF-RECORD                             VALUE 'N'.
        01  WS-ARR-LENGTH                          PIC 9(3) VALUE 140.            
        01  WS-WORD-SEARCH-ARR.
            05 WS-WSA OCCURS 0 TO 140 TIMES DEPENDING ON WS-ARR-LENGTH
