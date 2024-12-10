@@ -31,14 +31,18 @@
        01  WS-INREC-POINTER                       PIC 9(5) VALUE 1.
 
        01  WS-DISK-ARR.
-           05  WS-DISK   OCCURS 500000 TIMES     PIC S9(5).
+           05  WS-DISK   OCCURS 500000 TIMES      PIC S9(5).
                 
-       01  WS-DISK-POINTER                        PIC 9(5) VALUE 1.
+       01  WS-DISK-POINTER                        PIC 9(6) VALUE 1.
 
        01  WS-ID-SEQUENCE                         PIC 9(5) VALUE 0.
 
        01  WS-LEFT-POINTER                        PIC 9(5).
        01  WS-RIGHT-POINTER                       PIC 9(5).
+       01  WS-SAVE-VALUE                          PIC S9(5).
+       01  WS-ID-SPACE-CNT                        PIC 9(5).
+       01  WS-AVAIL-SPACE-CNT                     PIC 9(5).
+       01  WS-MOVE-CNT                            PIC 9(5).
 
        01  WS-CHECKSUM                            PIC 9(18) VALUE 0.
        01  WS-END                                 PIC X(25)
@@ -121,31 +125,60 @@
       *****************************************************************
        3000-CONSOLIDATE-SPACE.
            
-           MOVE 1 TO WS-LEFT-POINTER
            SUBTRACT 1 FROM WS-DISK-POINTER GIVING WS-RIGHT-POINTER        
            .
            
-           KEEP-CONSOLIDATING.
+           KEEP-CONSOLIDATING.     
 
-           PERFORM UNTIL WS-DISK(WS-RIGHT-POINTER) GREATER -1
-               IF WS-LEFT-POINTER EQUALS WS-RIGHT-POINTER 
-                   GO TO 3000-EXIT
-               END-IF
+      *    LOOP UNTIL FILE ID FOUND
+           PERFORM UNTIL WS-DISK(WS-RIGHT-POINTER) GREATER -1                
                SUBTRACT 1 FROM WS-RIGHT-POINTER
            END-PERFORM
 
-           PERFORM UNTIL WS-DISK(WS-LEFT-POINTER) EQUALS -1
-               IF WS-LEFT-POINTER EQUALS WS-RIGHT-POINTER 
-                   GO TO 3000-EXIT
-               END-IF               
-               ADD 1 TO WS-LEFT-POINTER
+           MOVE WS-DISK(WS-RIGHT-POINTER) TO WS-SAVE-VALUE  
+
+      *    LOOP UNTIL ALL OF SAME FILE ID ARE FOUND 
+           MOVE 0 TO WS-ID-SPACE-CNT
+           PERFORM UNTIL WS-DISK(WS-RIGHT-POINTER) 
+                         NOT EQUALS WS-SAVE-VALUE                                            
+               ADD 1 TO WS-ID-SPACE-CNT
+               SUBTRACT 1 FROM WS-RIGHT-POINTER
            END-PERFORM
 
-           MOVE WS-DISK(WS-RIGHT-POINTER) 
-                                           TO WS-DISK(WS-LEFT-POINTER)
-           MOVE -1 TO WS-DISK(WS-RIGHT-POINTER)
+           ADD 1 TO WS-RIGHT-POINTER
+           
+      *    LOOP FROM LEFT OF ARRAY, SEARCHING FOR NEEDED SPACE TO 
+      *    CONSOLIDATE FILE IN QUESTION
+           MOVE 1 TO WS-LEFT-POINTER
+           MOVE 0 TO WS-AVAIL-SPACE-CNT
 
-           GO TO KEEP-CONSOLIDATING
+           PERFORM UNTIL WS-LEFT-POINTER EQUALS WS-RIGHT-POINTER
+               IF WS-DISK(WS-LEFT-POINTER) EQUALS -1
+                   ADD 1 TO WS-AVAIL-SPACE-CNT
+               ELSE
+                   MOVE 0 TO WS-AVAIL-SPACE-CNT
+               END-IF
+               
+               IF WS-AVAIL-SPACE-CNT EQUALS WS-ID-SPACE-CNT
+                   MOVE 0 TO WS-MOVE-CNT
+                   PERFORM WS-AVAIL-SPACE-CNT TIMES
+                       MOVE -1 TO 
+                                 WS-DISK(WS-RIGHT-POINTER + WS-MOVE-CNT)
+                       MOVE WS-SAVE-VALUE TO
+                                  WS-DISK(WS-LEFT-POINTER - WS-MOVE-CNT)
+                       ADD 1 TO WS-MOVE-CNT
+                   END-PERFORM
+                   GO TO BREAK-LOOP
+               END-IF  
+               ADD 1 TO WS-LEFT-POINTER
+           END-PERFORM
+           .
+           SUBTRACT 1 FROM WS-RIGHT-POINTER
+           .
+           BREAK-LOOP.                 
+           IF WS-RIGHT-POINTER GREATER 0     
+               GO TO KEEP-CONSOLIDATING
+           END-IF
            .
        3000-EXIT.
            EXIT.
@@ -156,10 +189,14 @@
        4000-CALCULATE-CHECKSUM.
 
            MOVE 1 TO WS-DISK-POINTER
-           PERFORM UNTIL WS-DISK(WS-DISK-POINTER) EQUALS -1
-               COMPUTE WS-CHECKSUM = 
-                   WS-CHECKSUM + 
-                    ((WS-DISK-POINTER - 1) * WS-DISK(WS-DISK-POINTER))
+           PERFORM UNTIL WS-DISK-POINTER EQUALS 500001           
+               IF WS-DISK(WS-DISK-POINTER) EQUALS -1
+                   CONTINUE
+               ELSE 
+                   COMPUTE WS-CHECKSUM = 
+                       WS-CHECKSUM + 
+                      ((WS-DISK-POINTER - 1) * WS-DISK(WS-DISK-POINTER))
+               END-IF
                ADD 1 TO WS-DISK-POINTER
            END-PERFORM
 
