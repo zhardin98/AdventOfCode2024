@@ -72,6 +72,7 @@
        01  NODE-VAL-2-9 REDEFINES NODE-VAL-2-X    PIC 9(1).       
 
        01  WS-TOTAL-SCORE                         PIC 9(10).
+       01  WS-TOTAL-RATING                        PIC 9(10).
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
 
@@ -209,12 +210,15 @@
                END-IF
            END-IF
 
-           IF WS-COUNTED-TRAILS(WS-CURR-NODE-ROW)(WS-CURR-NODE-COL:1)
-              NOT EQUALS 'Y'                           AND
-              WS-MAP(WS-CURR-NODE-ROW)(WS-CURR-NODE-COL:1) EQUALS '9'       
+      *    INDENTED 2 INSTEAD OF 4 DUE TO SPACING ISSUES
+           IF WS-MAP(WS-CURR-NODE-ROW)(WS-CURR-NODE-COL:1) EQUALS '9' 
+             ADD 1 TO WS-TOTAL-RATING
+             IF WS-COUNTED-TRAILS(WS-CURR-NODE-ROW)(WS-CURR-NODE-COL:1)
+                NOT EQUALS 'Y'             
                ADD 1 TO WS-TOTAL-SCORE
                MOVE 'Y' TO 
                  WS-COUNTED-TRAILS(WS-CURR-NODE-ROW)(WS-CURR-NODE-COL:1)
+               END-IF
            END-IF
            .
            POP-STACK.
@@ -296,7 +300,8 @@
       *****************************************************************
        8000-DISPLAY-RESULTS.
             
-           DISPLAY 'TOTAL SCORE = ' WS-TOTAL-SCORE
+           DISPLAY 'TOTAL SCORE  = ' WS-TOTAL-SCORE
+           DISPLAY 'TOTAL RATING = ' WS-TOTAL-RATING
            .
        8000-EXIT.
            EXIT.
