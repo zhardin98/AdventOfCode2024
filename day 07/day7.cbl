@@ -241,7 +241,7 @@
            EXIT.
 
       *****************************************************************
-      * DISPLAY RESULTING SUM OF PRODUCTS                             *
+      * CONCATENATE LEFT VALUE TO RIGHT VALUE                         *
       *****************************************************************
        4300-CONCATENATE-VALUES.
            
@@ -266,7 +266,7 @@
            EXIT.
 
       *****************************************************************
-      * DISPLAY RESULTING SUM OF PRODUCTS                             *
+      * DISPLAY RESULTING SUM OF SUCCESSFUL CALCULATIONS              *
       *****************************************************************
        8000-DISPLAY-RESULTS.
             

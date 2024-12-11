@@ -338,7 +338,7 @@
            EXIT.
 
       ****************************************************************
-      * DISPLAY RESULTING SUM OF PRODUCTS                            *
+      * DISPLAY WORD SEARCH RESULTS                                  *
       ****************************************************************
        8000-DISPLAY-RESULT.
 

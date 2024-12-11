@@ -243,7 +243,7 @@
            EXIT.
 
       *****************************************************************
-      * DISPLAY RESULTING SUM OF PRODUCTS                             *
+      * DISPLAY TOTAL MIDDLES                                         *
       *****************************************************************
        8000-DISPLAY-RESULTS.
            DISPLAY 'TOTAL OF   VALID MIDDLES = ' WS-MID-TOTAL-1

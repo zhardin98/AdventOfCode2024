@@ -258,7 +258,7 @@
        7000-EXIT.
            EXIT.
       *****************************************************************
-      * DISPLAY RESULTING SUM OF PRODUCTS                             *
+      * DISPLAY TOTAL ANTINODES                                       *
       *****************************************************************
        8000-DISPLAY-RESULTS.
             

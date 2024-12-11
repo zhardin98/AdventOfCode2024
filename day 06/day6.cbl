@@ -348,7 +348,7 @@
            EXIT.
 
       *****************************************************************
-      * DISPLAY RESULTING SUM OF PRODUCTS                             *
+      * DISPLAY DISTINCT POSITIONS ON PATH                            *
       *****************************************************************
        8000-DISPLAY-RESULTS.
             

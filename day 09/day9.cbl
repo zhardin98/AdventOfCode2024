@@ -205,7 +205,7 @@
            EXIT.
 
       *****************************************************************
-      * DISPLAY RESULTING SUM OF PRODUCTS                             *
+      * DISPLAY CHECKSUM OF DEFRAGGED FILE                            *
       *****************************************************************
        8000-DISPLAY-RESULTS.
             
