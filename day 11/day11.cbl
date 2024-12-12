@@ -192,14 +192,3 @@
            .       
        9000-EXIT.
            EXIT.
-
-      ****************************************************************
-      * ABEND PARAGRAPH IF A FATAL ERROR IS FOUND                    *
-      ****************************************************************
-       9999-ABEND.
-           
-           DISPLAY 'ABENDING PROGRAM'
-           STOP RUN
-           .
-       9999-EXIT.
-           EXIT.
