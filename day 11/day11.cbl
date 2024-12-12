@@ -29,8 +29,8 @@
 
        01  WS-VALUES-ARR.
            05 WS-VALUES 
-           OCCURS 5 TO 8000000 TIMES DEPENDING ON WS-ARR-LENGTH 
-                                                  PIC 9(30).
+           OCCURS 5 TO 274229228071551 TIMES DEPENDING ON WS-ARR-LENGTH 
+                                                  PIC 9(15).
 
        01  WS-EVEN-DIGITS                         PIC X(1).
            88 EVEN-DIGITS                                  VALUE 'Y'.
@@ -40,16 +40,16 @@
            88 LEADING-ZEROS                                VALUE 'Y'.
            88 NOT-LEADING-ZEROS                            VALUE 'N'.
 
-       01  WS-ARR-SUB                             PIC 9(30).    
-       01  WS-ARR-SUB2                            PIC 9(30).   
-       01  WS-SUB-CHAR                            PIC 9(30).   
-       01  WS-START-DIGIT                         PIC 9(30).
-       01  WS-DIVISOR                             PIC 9(30).
-       01  WS-SPLIT-DIGIT                         PIC 9(30).
-       01  WS-SPLIT-LEFT                          PIC 9(30).
-       01  WS-SPLIT-RIGHT                         PIC 9(30). 
-       01  WS-ARR-LENGTH                          PIC 9(30) VALUE 8. 
-       01  WS-ARR-ORIG-LENGTH                     PIC 9(30) VALUE 8.
+       01  WS-ARR-SUB                             PIC 9(15).    
+       01  WS-ARR-SUB2                            PIC 9(15).   
+       01  WS-SUB-CHAR                            PIC 9(15).   
+       01  WS-START-DIGIT                         PIC 9(15).
+       01  WS-DIVISOR                             PIC 9(15).
+       01  WS-SPLIT-DIGIT                         PIC 9(15).
+       01  WS-SPLIT-LEFT                          PIC 9(15).
+       01  WS-SPLIT-RIGHT                         PIC 9(15). 
+       01  WS-ARR-LENGTH                          PIC 9(9) VALUE 8. 
+       01  WS-ARR-ORIG-LENGTH                     PIC 9(9) VALUE 8.
 
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
@@ -102,8 +102,8 @@
       *****************************************************************
        3000-BLINK.
 
-           PERFORM 25 TIMES
-               MOVE 1 TO WS-ARR-SUB               
+           PERFORM 75 TIMES
+               MOVE 1 TO WS-ARR-SUB    
                MOVE WS-ARR-LENGTH TO WS-ARR-ORIG-LENGTH        
                PERFORM UNTIL WS-ARR-SUB GREATER WS-ARR-ORIG-LENGTH
                    PERFORM 3100-COUNT-AMT-OF-DIGITS THRU 3100-EXIT
@@ -160,7 +160,7 @@
       *****************************************************************
        3200-SPLIT-STONES.
                       
-           COMPUTE WS-DIVISOR = (30 - (WS-START-DIGIT - 1))
+           COMPUTE WS-DIVISOR = (14 - (WS-START-DIGIT - 1))
            COMPUTE WS-SPLIT-DIGIT = WS-DIVISOR / 2
            MOVE WS-VALUES(WS-ARR-SUB)(WS-START-DIGIT:WS-SPLIT-DIGIT)
                                                         TO WS-SPLIT-LEFT
