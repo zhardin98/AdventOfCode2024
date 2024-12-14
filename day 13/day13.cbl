@@ -55,22 +55,22 @@
            05 C-A-COST                            PIC 9(1)  VALUE 3.
            05 WS-A-DELTA-X                        PIC 9(2).
            05 WS-A-DELTA-Y                        PIC 9(2).
-           05 WS-A-PUSH-AMT                       PIC 9(3).
+           05 WS-A-PUSH-AMT                       PIC 9(30).
 
        01  WS-B-PRESS.
            05 C-B-COST                            PIC 9(1)  VALUE 1.
            05 WS-B-DELTA-X                        PIC 9(2).
            05 WS-B-DELTA-Y                        PIC 9(2).  
-           05 WS-B-PUSH-AMT                       PIC 9(3).           
+           05 WS-B-PUSH-AMT                       PIC 9(30).           
 
        01  WS-PRIZE-LOCATION                      PIC X(25).
        01  WS-PRIZE-REC-POINTER                   PIC 9(2).
        01  WS-DIGIT-CNT                           PIC 9(2).
            
-       01  WS-PRIZE-X                             PIC 9(6).
-       01  WS-PRIZE-Y                             PIC 9(6).
+       01  WS-PRIZE-X                             PIC 9(30).
+       01  WS-PRIZE-Y                             PIC 9(30).
 
-       01  WS-TOTAL-TOKENS                        PIC 9(10) VALUE 0.
+       01  WS-TOTAL-TOKENS                        PIC 9(30) VALUE 0.
 
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
@@ -201,6 +201,8 @@
                ADD 1 TO WS-DIGIT-CNT
            END-PERFORM           
 
+           ADD 10000000000000 TO WS-PRIZE-X
+                                 WS-PRIZE-Y
 
       *    BYPASS BLANK RECORD
            READ INPUT-FILE
@@ -243,8 +245,8 @@
            AND ((WS-A-DELTA-Y * WS-A-PUSH-AMT) + 
                 (WS-B-DELTA-Y * WS-B-PUSH-AMT) 
                  EQUALS WS-PRIZE-Y)  
-               SET IS-VALID-MACHINE     TO TRUE
-           ELSE
+               SET IS-VALID-MACHINE     TO TRUE      
+           ELSE      
                SET IS-NOT-VALID-MACHINE TO TRUE
            END-IF
 
