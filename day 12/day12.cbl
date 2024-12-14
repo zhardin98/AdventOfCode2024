@@ -138,7 +138,6 @@
            PERFORM 3010-INITIALIZE-MAP THRU 3010-EXIT
            PERFORM UNTIL FINISH-PROCESSING      
                PERFORM 3020-FIND-MIN-POS   THRU 3020-EXIT   
-TEST           DISPLAY MAP-ARR-SUB ',' MAP-SUB-CHAR               
                IF FINISH-PROCESSING
                    GO TO 3000-EXIT
                END-IF
