@@ -31,6 +31,10 @@
            88 END-OF-FILE                                   VALUE 'Y'.
            88 NOT-END-OF-FILE                               VALUE 'N'.
 
+       01  WS-TREE-FOUND                          PIC X(1).
+           88 TREE-FOUND                                    VALUE 'Y'.
+           88 TREE-NOT-FOUND                                VALUE 'N'.
+
        01  WS-NUM-SIGN                            PIC X(1).
            88 NEGATIVE-NUMBER                               VALUE '-'.
            88 POSITIVE-NUMBER                               VALUE '+'.
@@ -58,7 +62,13 @@
        01  WS-QUAD1-SAFETY                        PIC 9(4)  VALUE 0.
        01  WS-QUAD2-SAFETY                        PIC 9(4)  VALUE 0.
        01  WS-QUAD3-SAFETY                        PIC 9(4)  VALUE 0.
-       01  WS-QUAD4-SAFETY                        PIC 9(4)  VALUE 0.       
+       01  WS-QUAD4-SAFETY                        PIC 9(4)  VALUE 0.  
+
+       01  WS-MAP-ARR.                            
+           05 WS-MAP OCCURS 103 TIMES             PIC X(101).
+       01  WS-MAP-POINTER                         PIC 9(3).
+
+       01  WS-SECONDS                             PIC 9(5)  VALUE 1.
 
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
@@ -69,12 +79,31 @@
       *************************************************************** 
        0000-MAINLINE.
            
+           MOVE SPACES TO WS-TREE-FOUND
+                          WS-MAP-ARR                        
            PERFORM 1000-OPEN-FILE             THRU 1000-EXIT
+           MOVE 0 TO WS-QUAD1-SAFETY
+                     WS-QUAD2-SAFETY
+                     WS-QUAD3-SAFETY
+                     WS-QUAD4-SAFETY 
            PERFORM 1500-DETERMINE-MIDPOINTS   THRU 1500-EXIT
            PERFORM 2000-PROCESS-DATA          THRU 2000-EXIT
                UNTIL END-OF-FILE   
            PERFORM 8000-DISPLAY-RESULTS       THRU 8000-EXIT
            PERFORM 9000-CLOSE-FILE            THRU 9000-EXIT
+           IF TREE-NOT-FOUND
+               ADD 1 TO WS-SECONDS
+               MOVE SPACES TO WS-END-OF-FILE
+               GO TO 0000-MAINLINE
+           ELSE
+               PERFORM UNTIL WS-MAP-POINTER GREATER C-MAP-HEIGHT + 1
+                   DISPLAY WS-MAP(WS-MAP-POINTER)
+                   ADD 1 TO WS-MAP-POINTER
+               END-PERFORM
+               DISPLAY 'TREE FOUND AFTER ' WS-SECONDS ' SECONDS'
+               GO TO 0000-EXIT
+           END-IF
+
            .
        0000-EXIT.
            GOBACK.
@@ -108,9 +137,19 @@
            READ INPUT-FILE
                AT END 
                    SET END-OF-FILE TO TRUE
-               NOT AT END
+               NOT AT END          
                    PERFORM 2010-PARSE-DATA   THRU 2010-EXIT
-                   PERFORM 3000-FORWARD-TIME THRU 3000-EXIT 100 TIMES
+                   PERFORM 3000-FORWARD-TIME THRU 3000-EXIT 
+                       WS-SECONDS TIMES
+                   ADD 1 TO WS-ROB-POS-X
+                            WS-ROB-POS-Y
+      *            TREE DOES NOT OCCUR ON DUPLICATED NODES                      
+                   IF WS-MAP(WS-ROB-POS-X)(WS-ROB-POS-Y:1) EQUALS '1'              
+                       SET TREE-NOT-FOUND TO TRUE
+                   END-IF
+                   MOVE '1' TO WS-MAP(WS-ROB-POS-X)(WS-ROB-POS-Y:1)
+                   SUBTRACT 1 FROM WS-ROB-POS-X
+                                   WS-ROB-POS-Y                                  
                    PERFORM 4000-QUADRANT     THRU 4000-EXIT
            END-READ
            .
@@ -217,6 +256,7 @@
       * IF THE NODE IS IN A QUADRANT, INCREMENT THAT RELEVANT COUNTER *
       *****************************************************************
        4000-QUADRANT.
+
        
            EVALUATE TRUE
                WHEN WS-ROB-POS-X EQUALS  WS-MID-WIDTH     AND
@@ -244,10 +284,15 @@
       *****************************************************************
        8000-DISPLAY-RESULTS.
            
+           MOVE 0 TO WS-SAFETY-FACTOR
            COMPUTE WS-SAFETY-FACTOR = WS-QUAD1-SAFETY * WS-QUAD2-SAFETY
                                     * WS-QUAD3-SAFETY * WS-QUAD4-SAFETY
 
-           DISPLAY 'SAFETY FACTOR = ' WS-SAFETY-FACTOR
+           IF WS-SECONDS EQUALS 100
+               DISPLAY 'SAFETY FACTOR = ' WS-SAFETY-FACTOR
+           END-IF
+
+           MOVE 1 TO WS-MAP-POINTER
            .
        8000-EXIT.
            EXIT.
