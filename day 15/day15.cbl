@@ -48,9 +48,13 @@
            05 WS-MAP OCCURS 0 TO 130 TIMES DEPENDING ON WS-ARR-LENGTH
                                                   PIC X(140).
        01  WS-MAP-ARR-SUB                         PIC 9(3) VALUE 1.
-       01  WS-MAP-ARR-SUB-ORIG                    PIC 9(3).
        01  WS-MAP-SUB-CHAR                        PIC 9(3).
-       01  WS-MAP-SUB-CHAR-ORIG                   PIC 9(3).
+
+       01  WS-BIGGER-MAP-ARR.
+           05 WS-BIG-MAP OCCURS 260 TIMES         PIC X(280).
+       01  WS-BIG-MAP-ARR-SUB                     PIC 9(3) VALUE 1.
+       01  WS-BIG-MAP-SUB-CHAR                    PIC 9(3).       
+
 
        01  WS-INSTRUCTIONS                        PIC X(20000).
        01  WS-INPUT-RECORD-POINTER                PIC 9(4).
@@ -58,8 +62,6 @@
 
        01  WS-START-ROW                           PIC 9(3).
        01  WS-START-COL                           PIC 9(3).
-       01  WS-START-DIR                           PIC X(1).
-       01  WS-STEP-CNT                            PIC 9(5).
 
        01  WS-TARGET-NODE.
               05  WS-TARGET-ROW                   PIC 9(3).
@@ -79,6 +81,7 @@
 
        01  WS-SUM                                 PIC 9(10) VALUE 0.     
 
+
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
 
@@ -91,15 +94,16 @@
            PERFORM 1000-OPEN-FILE             THRU 1000-EXIT
            PERFORM 2000-CONVERT-FILE-TO-ARRAY THRU 2000-EXIT
                UNTIL END-OF-MAP           
+           PERFORM 2100-DOUBLE-MAP            THRU 2100-EXIT
            PERFORM 2500-FIND-STARTING-POS     THRU 2500-EXIT
-           MOVE 1 TO WS-INSTRUCTIONS-POINTER
-           PERFORM 2600-PROCESS-INSTRUCTIONS  THRU 2600-EXIT
-               UNTIL END-OF-FILE
-           MOVE 1 TO WS-INSTRUCTIONS-POINTER 
-           PERFORM 3000-WALK-ROBOT            THRU 3000-EXIT 
-               UNTIL WS-INSTRUCTIONS(WS-INSTRUCTIONS-POINTER:1) EQUALS
-                     SPACE OR WS-INSTRUCTIONS-POINTER GREATER 20000
-           PERFORM 8000-DISPLAY-RESULTS       THRU 8000-EXIT
+            MOVE 1 TO WS-INSTRUCTIONS-POINTER
+            PERFORM 2600-PROCESS-INSTRUCTIONS  THRU 2600-EXIT
+                UNTIL END-OF-FILE
+            MOVE 1 TO WS-INSTRUCTIONS-POINTER 
+            PERFORM 3000-WALK-ROBOT            THRU 3000-EXIT 
+                UNTIL WS-INSTRUCTIONS(WS-INSTRUCTIONS-POINTER:1) EQUALS
+                      SPACE OR WS-INSTRUCTIONS-POINTER GREATER 20000
+            PERFORM 8000-DISPLAY-RESULTS       THRU 8000-EXIT
            PERFORM 9000-CLOSE-FILE            THRU 9000-EXIT
            .
        0000-EXIT.
@@ -137,25 +141,68 @@
            EXIT.
 
       *****************************************************************
+      * EXPAND MAP TO WIDER FORMAT                                    *
+      *****************************************************************
+       2100-DOUBLE-MAP.
+
+           MOVE 1 TO WS-MAP-ARR-SUB
+                     WS-BIG-MAP-ARR-SUB
+           PERFORM UNTIL WS-MAP-ARR-SUB GREATER WS-ARR-LENGTH
+               MOVE 1 TO WS-MAP-SUB-CHAR
+                         WS-BIG-MAP-SUB-CHAR
+               PERFORM UNTIL WS-MAP-SUB-CHAR GREATER WS-ARR-LENGTH
+                   EVALUATE WS-MAP(WS-MAP-ARR-SUB)(WS-MAP-SUB-CHAR:1)
+                       WHEN '#'
+                           MOVE '##' TO 
+                                          WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)
+                                                 (WS-BIG-MAP-SUB-CHAR:2)
+                       WHEN 'O'
+                           MOVE '[]' TO 
+                                          WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)
+                                                 (WS-BIG-MAP-SUB-CHAR:2)
+                       WHEN '.'
+                           MOVE '..' TO 
+                                          WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)
+                                                 (WS-BIG-MAP-SUB-CHAR:2)                          
+                       WHEN '@'
+                           MOVE '@.' TO 
+                                          WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)
+                                                 (WS-BIG-MAP-SUB-CHAR:2) 
+                       WHEN OTHER
+                           PERFORM 9999-ABEND THRU 9999-EXIT
+                   END-EVALUATE
+                   ADD 1 TO WS-MAP-SUB-CHAR
+                   ADD 2 TO WS-BIG-MAP-SUB-CHAR
+               END-PERFORM
+               ADD 1 TO WS-MAP-ARR-SUB
+                        WS-BIG-MAP-ARR-SUB
+           END-PERFORM
+           MULTIPLY 2 BY WS-ARR-LENGTH
+           .
+       2100-EXIT.
+           EXIT.
+           
+      *****************************************************************
       * FIND GUARD'S STARTING POSITION                                *
       *****************************************************************
        2500-FIND-STARTING-POS.
 
            MOVE SPACES TO WS-START-POS-FOUND
-           MOVE 1 TO WS-MAP-ARR-SUB
-                     WS-MAP-SUB-CHAR
+           MOVE 1 TO WS-BIG-MAP-ARR-SUB
+                     WS-BIG-MAP-SUB-CHAR
            PERFORM UNTIL START-POS-FOUND
-               IF WS-MAP(WS-MAP-ARR-SUB)(WS-MAP-SUB-CHAR:1) EQUALS '@'
+               IF WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)(WS-BIG-MAP-SUB-CHAR:1) 
+                  EQUALS '@'
                    SET START-POS-FOUND TO TRUE      
-                   MOVE WS-MAP-ARR-SUB  TO WS-START-ROW
-                   MOVE WS-MAP-SUB-CHAR TO WS-START-COL
+                   MOVE WS-BIG-MAP-ARR-SUB  TO WS-START-ROW
+                   MOVE WS-BIG-MAP-SUB-CHAR TO WS-START-COL               
                    GO TO 2500-EXIT   
                END-IF
-               IF WS-MAP-SUB-CHAR EQUALS WS-ARR-LENGTH
-                   ADD  1 TO WS-MAP-ARR-SUB
-                   MOVE 1 TO WS-MAP-SUB-CHAR
+               IF WS-BIG-MAP-SUB-CHAR EQUALS WS-ARR-LENGTH
+                   ADD  1 TO WS-BIG-MAP-ARR-SUB
+                   MOVE 1 TO WS-BIG-MAP-SUB-CHAR
                ELSE
-                   ADD 1 TO WS-MAP-SUB-CHAR
+                   ADD 1 TO  WS-BIG-MAP-SUB-CHAR
            END-PERFORM
            .
        2500-EXIT.
@@ -196,30 +243,44 @@
                                                          TO WS-DIRECTION
            EVALUATE TRUE     
                WHEN DIR-UP
-                   SUBTRACT 1 FROM WS-MAP-ARR-SUB GIVING WS-TARGET-ROW
-                   MOVE WS-MAP-SUB-CHAR TO WS-TARGET-COL
+                   SUBTRACT 1 FROM WS-BIG-MAP-ARR-SUB 
+                         GIVING WS-TARGET-ROW
+                   MOVE WS-BIG-MAP-SUB-CHAR TO WS-TARGET-COL
                WHEN DIR-DOWN
-                   ADD 1 TO WS-MAP-ARR-SUB GIVING WS-TARGET-ROW
-                   MOVE WS-MAP-SUB-CHAR TO WS-TARGET-COL
-               WHEN DIR-LEFT             
-                   MOVE WS-MAP-ARR-SUB TO WS-TARGET-ROW
-                   SUBTRACT 1 FROM WS-MAP-SUB-CHAR GIVING WS-TARGET-COL
+                   ADD 1 TO WS-BIG-MAP-ARR-SUB GIVING WS-TARGET-ROW
+                   MOVE WS-BIG-MAP-SUB-CHAR TO WS-TARGET-COL
+               WHEN DIR-LEFT                       
+                   MOVE WS-BIG-MAP-ARR-SUB TO WS-TARGET-ROW
+                   SUBTRACT 1 FROM WS-BIG-MAP-SUB-CHAR 
+                         GIVING WS-TARGET-COL
                WHEN DIR-RIGHT
-                   MOVE WS-MAP-ARR-SUB TO WS-TARGET-ROW
-                   ADD 1 TO WS-MAP-SUB-CHAR GIVING WS-TARGET-COL
+                   MOVE WS-BIG-MAP-ARR-SUB TO WS-TARGET-ROW
+                   ADD 1 TO WS-BIG-MAP-SUB-CHAR GIVING WS-TARGET-COL
            END-EVALUATE
 
-      *    DETERMINE WHAT NEXT NODE IS
-           EVALUATE WS-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1)
+      *    DETERMINE WHAT NEXT NODE IS 
+           EVALUATE WS-BIG-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1)
                WHEN '.'
-                   MOVE '.' TO WS-MAP(WS-MAP-ARR-SUB)(WS-MAP-SUB-CHAR:1)
-                   MOVE '@' TO WS-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1)
-                   MOVE WS-TARGET-ROW TO WS-MAP-ARR-SUB
-                   MOVE WS-TARGET-COL TO WS-MAP-SUB-CHAR
+                   MOVE '.' TO 
+                   WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)(WS-BIG-MAP-SUB-CHAR:1)
+                   MOVE '@' TO 
+                              WS-BIG-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1)
+                   MOVE WS-TARGET-ROW TO WS-BIG-MAP-ARR-SUB
+                   MOVE WS-TARGET-COL TO WS-BIG-MAP-SUB-CHAR
                WHEN '#'
                    CONTINUE
-               WHEN 'O'
-                   PERFORM 3500-PUSH-BOX THRU 3500-EXIT
+               WHEN '['
+               WHEN ']'
+                   EVALUATE TRUE     
+                     WHEN DIR-UP
+                         PERFORM 3500-PUSH-BOX-UP    THRU 3500-EXIT
+                     WHEN DIR-DOWN
+                         CONTINUE
+                     WHEN DIR-LEFT                       
+                         PERFORM 3700-PUSH-BOX-LEFT  THRU 3700-EXIT
+                     WHEN DIR-RIGHT
+                         PERFORM 3800-PUSH-BOX-RIGHT THRU 3800-EXIT
+                 END-EVALUATE
            END-EVALUATE
 
            ADD 1 TO WS-INSTRUCTIONS-POINTER
@@ -229,32 +290,29 @@
            EXIT.
 
       *****************************************************************
-      * PUSH BOX(ES) IN GIVEN DIRECTION                               *
+      * PUSH BOX(ES) UP                                               *
       *****************************************************************
-       3500-PUSH-BOX.
+       3500-PUSH-BOX-UP.
 
+      *    IF LOOKING AT RIGHT SIDE, FOCUS ON LEFT SIDE
+           IF WS-BIG-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1) EQUALS ']'          
+               SUBTRACT 1 FROM WS-TARGET-COL
+           END-IF
       *    SAVE LOCATION OF BOX TO STACK SO EVERYTHING CAN BE UPDATED 
            MOVE WS-TARGET-NODE TO WS-STACK-IO
            PERFORM 7000-STACK-PUSH THRU 7000-EXIT
 
       *    CHECK IF NEXT LOCATION IS ALSO A BOX
-           EVALUATE TRUE     
-               WHEN DIR-UP
-                   SUBTRACT 1 FROM WS-TARGET-ROW
-               WHEN DIR-DOWN
-                   ADD 1 TO WS-TARGET-ROW
-               WHEN DIR-LEFT             
-                   SUBTRACT 1 FROM  WS-TARGET-COL
-               WHEN DIR-RIGHT
-                   ADD 1 TO WS-TARGET-COL
-           END-EVALUATE
+       
+           SUBTRACT 1 FROM WS-TARGET-ROW
 
-           EVALUATE WS-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1)
-               WHEN 'O'
-                   GO TO 3500-PUSH-BOX
+           EVALUATE WS-BIG-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1)
+               WHEN ']'   
+               WHEN '['
+                   GO TO 3500-PUSH-BOX-UP
                WHEN '.'
                    CONTINUE
-               WHEN '#'
+               WHEN '#'           
                    PERFORM 7100-STACK-POP THRU 7100-EXIT 
                        UNTIL WS-STACK-CNT EQUALS 0
                    GO TO 3500-EXIT
@@ -262,53 +320,95 @@
 
       *    REACHING THIS INSTRUCTION MEANS ALL BOXES IN LINE HAVE BEEN
       *    IDENTIFIED AND IT'S TIME TO "PUSH" THEM  
+      *    CLEAR ORIGINAL LOCATION/BOXES
+           MOVE '.' TO 
+               WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)(WS-BIG-MAP-SUB-CHAR:1)      
            PERFORM UNTIL WS-STACK-CNT EQUALS 0  
-               PERFORM 7100-STACK-POP THRU 7100-EXIT        
-               EVALUATE TRUE     
-                      WHEN DIR-UP
-                          SUBTRACT 1 FROM WS-STACK-IO-ROW
-                      WHEN DIR-DOWN
-                          ADD 1 TO WS-STACK-IO-ROW
-                      WHEN DIR-LEFT
-                          SUBTRACT 1 FROM WS-STACK-IO-COL
-                      WHEN DIR-RIGHT
-                          ADD 1 TO WS-STACK-IO-COL
-               END-EVALUATE
-               MOVE 'O' TO WS-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1) 
-               EVALUATE TRUE     
-                      WHEN DIR-UP
-                          ADD 1 TO WS-STACK-IO-ROW
-                      WHEN DIR-DOWN
-                          SUBTRACT 1 FROM WS-STACK-IO-ROW
-                      WHEN DIR-LEFT
-                          ADD 1 TO WS-STACK-IO-COL
-                      WHEN DIR-RIGHT
-                          SUBTRACT 1 FROM WS-STACK-IO-COL
-               END-EVALUATE
-               MOVE '.' TO WS-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1) 
+               PERFORM 7100-STACK-POP THRU 7100-EXIT 
+               MOVE '.' TO 
+                      WS-BIG-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1)                    
+               SUBTRACT 1 FROM WS-STACK-IO-ROW
+               MOVE '[' TO 
+                          WS-BIG-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1) 
+               ADD 1 TO WS-STACK-IO-COL
+               MOVE ']' TO 
+                          WS-BIG-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1) 
            END-PERFORM
 
-      *    SET CURRENT LOCATION
-           MOVE '@' TO WS-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1)
-           MOVE WS-STACK-IO-ROW TO WS-MAP-ARR-SUB
-           MOVE WS-STACK-IO-COL TO WS-MAP-SUB-CHAR         
-           EVALUATE TRUE     
-               WHEN DIR-UP
-                   ADD 1 TO WS-STACK-IO-ROW
-               WHEN DIR-DOWN
-                   SUBTRACT 1 FROM WS-STACK-IO-ROW
-               WHEN DIR-LEFT
-                   ADD 1 TO WS-STACK-IO-COL
-               WHEN DIR-RIGHT
-                   SUBTRACT 1 FROM WS-STACK-IO-COL
-           END-EVALUATE
-      *    CLEAR PRIOR LOCATION
-           MOVE '.' TO WS-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1)     
+      *    SET NEW STARTING LOCATION
+           SUBTRACT 1 FROM WS-BIG-MAP-ARR-SUB
+           MOVE '@' TO 
+                  WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)(WS-BIG-MAP-SUB-CHAR :1)  
            .
        3500-EXIT.
            EXIT.
 
- 
+      *****************************************************************
+      * PUSH BOX(ES) TO LEFT                                          *
+      *****************************************************************
+       3700-PUSH-BOX-LEFT.
+
+           CONTINUE
+           .
+       3700-EXIT.
+           EXIT.
+
+      *****************************************************************
+      * PUSH BOX(ES) TO RIGHT                                         *
+      *****************************************************************
+       3800-PUSH-BOX-RIGHT.
+
+      *    IF LOOKING AT LEFT SIDE, FOCUS ON RIGHT SIDE
+           IF WS-BIG-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1) EQUALS '['          
+               ADD 1 TO WS-TARGET-COL
+           END-IF
+      *    SAVE LOCATION OF BOX TO STACK SO EVERYTHING CAN BE UPDATED 
+           MOVE WS-TARGET-NODE TO WS-STACK-IO
+           PERFORM 7000-STACK-PUSH THRU 7000-EXIT
+
+      *    CHECK IF NEXT LOCATION IS ALSO A BOX
+       
+           ADD 1 TO WS-TARGET-COL
+
+           EVALUATE WS-BIG-MAP(WS-TARGET-ROW)(WS-TARGET-COL:1)
+               WHEN '['
+                   GO TO 3800-PUSH-BOX-RIGHT
+               WHEN '.'
+                   CONTINUE
+               WHEN '#'
+                   PERFORM 7100-STACK-POP THRU 7100-EXIT 
+                       UNTIL WS-STACK-CNT EQUALS 0
+                   GO TO 3800-EXIT
+           END-EVALUATE
+
+      *    REACHING THIS INSTRUCTION MEANS ALL BOXES IN LINE HAVE BEEN
+      *    IDENTIFIED AND IT'S TIME TO "PUSH" THEM  
+      *    CLEAR ORIGINAL LOCATION/BOXES
+           MOVE '.' TO 
+                   WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)(WS-BIG-MAP-SUB-CHAR:1)
+           PERFORM UNTIL WS-STACK-CNT EQUALS 0  
+               PERFORM 7100-STACK-POP THRU 7100-EXIT           
+               ADD 1 TO WS-STACK-IO-COL
+               MOVE ']' TO 
+                          WS-BIG-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1) 
+               SUBTRACT 1 FROM WS-STACK-IO-COL
+               MOVE '[' TO 
+                          WS-BIG-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1) 
+           END-PERFORM
+
+           MOVE '[' TO WS-BIG-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1)
+           MOVE WS-STACK-IO-ROW TO WS-BIG-MAP-ARR-SUB
+           MOVE WS-STACK-IO-COL TO WS-BIG-MAP-SUB-CHAR             
+           SUBTRACT 1 FROM WS-STACK-IO-COL
+           
+      *    SET NEW STARTING LOCATION
+           MOVE '@' TO WS-BIG-MAP(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1)  
+           MOVE WS-STACK-IO-ROW TO WS-BIG-MAP-ARR-SUB   
+           MOVE WS-STACK-IO-COL TO WS-BIG-MAP-SUB-CHAR  
+           .
+       3800-EXIT.
+           EXIT.
+
       *****************************************************************
       * PUSH AN ITEM ONTO STACK                                       *
       *****************************************************************
@@ -351,18 +451,23 @@
       *****************************************************************
        8000-DISPLAY-RESULTS.
             
-           MOVE 1 TO WS-MAP-ARR-SUB
-           PERFORM UNTIL WS-MAP-ARR-SUB GREATER WS-ARR-LENGTH
-               MOVE 1 TO WS-MAP-SUB-CHAR
-               PERFORM UNTIL WS-MAP-SUB-CHAR GREATER WS-ARR-LENGTH
-                   IF WS-MAP(WS-MAP-ARR-SUB)(WS-MAP-SUB-CHAR:1)
-                      EQUALS 'O'
-                       COMPUTE WS-SUM = (100 * (WS-MAP-ARR-SUB - 1)) +
-                               WS-SUM + (WS-MAP-SUB-CHAR - 1)
+TEST       MOVE 1 TO WS-BIG-MAP-ARR-SUB
+TEST       PERFORM UNTIL WS-BIG-MAP-ARR-SUB EQUALS WS-ARR-LENGTH
+TEST          DISPLAY WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)(1:20)
+TEST       ADD 1 TO WS-BIG-MAP-ARR-SUB
+TEST       END-PERFORM            
+           MOVE 1 TO WS-BIG-MAP-ARR-SUB
+           PERFORM UNTIL WS-BIG-MAP-ARR-SUB GREATER WS-ARR-LENGTH
+               MOVE 1 TO WS-BIG-MAP-SUB-CHAR
+               PERFORM UNTIL WS-BIG-MAP-SUB-CHAR GREATER WS-ARR-LENGTH
+                   IF WS-MAP(WS-BIG-MAP-ARR-SUB)(WS-BIG-MAP-SUB-CHAR:1)
+                      EQUALS '['
+                       COMPUTE WS-SUM = (100 * (WS-BIG-MAP-ARR-SUB - 1)) 
+                               + WS-SUM + (WS-BIG-MAP-SUB-CHAR - 1)
                    END-IF
-                   ADD 1 TO WS-MAP-SUB-CHAR
+                   ADD 1 TO WS-BIG-MAP-SUB-CHAR
                END-PERFORM
-               ADD 1 TO WS-MAP-ARR-SUB
+               ADD 1 TO WS-BIG-MAP-ARR-SUB
            END-PERFORM
 
            DISPLAY 'TOTAL SUM = ' WS-SUM
