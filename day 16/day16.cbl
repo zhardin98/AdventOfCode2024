@@ -81,8 +81,17 @@
            88 DIR-LEFT                                      VALUE '<'.
            88 DIR-RIGHT                                     VALUE '>'.
 
+       01  WS-STEP-CNT                            PIC 9(10).
+       01  WS-GOOD-SIT-ARR.
+           05 WS-GOOD-SIT OCCURS 15 TO 141 TIMES DEPENDING ON ARR-LENGTH
+                                                  PIC X(141).
+       01  WS-SIT-NODE.
+           05  WS-SIT-SUB                         PIC 9(3).
+           05  WS-SIT-CHAR                        PIC 9(3).
+
        01  WS-CURRENT-SCORE                       PIC 9(10).
        01  WS-FINAL-SCORE                         PIC 9(10).
+       01  WS-SIT-CNT                             PIC 9(10).
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
 
@@ -159,22 +168,27 @@
            MOVE MAP-ARR-SUB     TO WS-CURR-NODE-ROW  
            MOVE MAP-SUB-CHAR    TO WS-CURR-NODE-COL
            MOVE 0               TO WS-CURRENT-SCORE
+                                   WS-SIT-CNT
            MOVE SPACES          TO WS-VISITED-ARR
            .
            LOOK-FOR-PATH.       
       *    CHECK IF ON END POINT
-           IF WS-MAP(WS-CURR-NODE-ROW)(WS-CURR-NODE-COL:1) EQUALS 'E' 
-TEST  *     DISPLAY 'END REACHED'
-TEST  *     DISPLAY 'STACK = ' WS-STACK-TABLE    
+           IF WS-MAP(WS-CURR-NODE-ROW)(WS-CURR-NODE-COL:1) EQUALS 'E'  
                PERFORM 3900-GET-TURNS THRU 3900-EXIT   
                MOVE WS-STACK-CNT TO WS-CURRENT-SCORE       
                MULTIPLY 1000 BY WS-TURNS
-               ADD WS-TURNS TO WS-CURRENT-SCORE              
-               IF WS-CURRENT-SCORE LESS WS-FINAL-SCORE 
-               OR WS-FINAL-SCORE EQUALS 0
-TEST       DISPLAY 'SCORE = ' WS-CURRENT-SCORE                
-                   MOVE WS-CURRENT-SCORE TO WS-FINAL-SCORE
-               END-IF
+               ADD WS-TURNS TO WS-CURRENT-SCORE             
+               EVALUATE TRUE   
+                   WHEN WS-CURRENT-SCORE GREATER WS-FINAL-SCORE 
+                        AND WS-FINAL-SCORE NOT EQUALS 0          
+                       CONTINUE
+                   WHEN WS-CURRENT-SCORE EQUALS WS-FINAL-SCORE             
+                       PERFORM 3950-CHECK-UNIQUE-SPOTS THRU 3950-EXIT
+                   WHEN OTHER
+                       MOVE SPACES TO WS-GOOD-SIT-ARR
+                       PERFORM 3950-CHECK-UNIQUE-SPOTS THRU 3950-EXIT
+                       MOVE WS-CURRENT-SCORE TO WS-FINAL-SCORE
+               END-EVALUATE
                GO TO POP-STACK
            END-IF         
 
@@ -339,6 +353,24 @@ TEST       DISPLAY 'SCORE = ' WS-CURRENT-SCORE
            EXIT.
 
       *****************************************************************
+      * ONCE A GOOD PATH IS FOUND, ADD ALL SPOTS (NOT ALREADY         *
+      * FOR) TO WS-GOOD-SIT-ARR                                       *
+      *****************************************************************
+       3950-CHECK-UNIQUE-SPOTS.
+
+           MOVE 1 TO WS-STEP-CNT
+           PERFORM UNTIL WS-STEP-CNT GREATER WS-STACK-CNT 
+               MOVE WS-STACK-ITEM(WS-STEP-CNT) TO WS-SIT-NODE
+               IF WS-GOOD-SIT(WS-SIT-SUB)(WS-SIT-CHAR:1) EQUALS SPACE        
+                   MOVE 'Y' TO WS-GOOD-SIT(WS-SIT-SUB)(WS-SIT-CHAR:1) 
+               END-IF
+               ADD 1 TO WS-STEP-CNT
+           END-PERFORM
+           .
+       3950-EXIT.
+           EXIT.
+
+      *****************************************************************
       * PUSH AN ITEM ONTO STACK                                       *
       *****************************************************************
        7000-STACK-PUSH.
@@ -380,8 +412,12 @@ TEST       DISPLAY 'SCORE = ' WS-CURRENT-SCORE
       * DISPLAY SCORE OF TRAIL                                        *
       *****************************************************************
        8000-DISPLAY-RESULTS.
-            
-           DISPLAY 'LOWEST SCORE = ' WS-FINAL-SCORE
+           
+           DISPLAY 'LOWEST SCORE = '     WS-FINAL-SCORE
+           INSPECT WS-GOOD-SIT-ARR TALLYING WS-SIT-CNT FOR ALL'Y'
+      *    ADD 1 FOR END POINT
+           ADD 1 TO WS-SIT-CNT
+           DISPLAY 'UNIQUE SIT SPOTS = ' WS-SIT-CNT
            .
        8000-EXIT.
            EXIT.
