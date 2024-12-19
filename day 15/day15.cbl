@@ -450,12 +450,7 @@
       * DISPLAY SUM OF GPS COORDINATES                                *
       *****************************************************************
        8000-DISPLAY-RESULTS.
-            
-TEST       MOVE 1 TO WS-BIG-MAP-ARR-SUB
-TEST       PERFORM UNTIL WS-BIG-MAP-ARR-SUB EQUALS WS-ARR-LENGTH
-TEST          DISPLAY WS-BIG-MAP(WS-BIG-MAP-ARR-SUB)(1:20)
-TEST       ADD 1 TO WS-BIG-MAP-ARR-SUB
-TEST       END-PERFORM            
+                 
            MOVE 1 TO WS-BIG-MAP-ARR-SUB
            PERFORM UNTIL WS-BIG-MAP-ARR-SUB GREATER WS-ARR-LENGTH
                MOVE 1 TO WS-BIG-MAP-SUB-CHAR
