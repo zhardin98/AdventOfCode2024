@@ -169,10 +169,6 @@
            MOVE 1 TO WS-INPUT-POINTER
 
            PERFORM UNTIL WS-SOURCE-CODE(WS-INPUT-POINTER:1) EQUALS ' '
-TEST  *         DISPLAY 'REG A = ' WS-REG-A
-TEST  *         DISPLAY 'REG B = ' WS-REG-B
-TEST  *         DISPLAY 'REG C = ' WS-REG-C
-TEST  *         DISPLAY '*********************************'
                MOVE WS-SOURCE-CODE(WS-INPUT-POINTER:1) TO WS-INSTRUCTION            
                EVALUATE TRUE
       *            DIVIDES TO A
@@ -183,19 +179,15 @@ TEST  *         DISPLAY '*********************************'
                    WHEN BXL               
                        MOVE WS-REG-B TO INPUT-DECIMAL
                        PERFORM 3200-NUM-TO-BIN THRU 3200-EXIT
-TEST  *                 DISPLAY 'BIN1 = ' OUTPUT-BINARY  
                        MOVE OUTPUT-BINARY TO WS-BIN-1
                        ADD 2 TO WS-INPUT-POINTER
                        MOVE WS-SOURCE-CODE(WS-INPUT-POINTER:1) 
                                                         TO INPUT-DECIMAL
                        PERFORM 3200-NUM-TO-BIN THRU 3200-EXIT
-                       MOVE OUTPUT-BINARY TO WS-BIN-2
-TEST  *                 DISPLAY 'BIN2 = ' OUTPUT-BINARY                         
-                       PERFORM 3300-XOR        THRU 3300-EXIT
-TEST  *                 DISPLAY 'RES  = ' WS-BIN-XOR-RESULT                       
+                       MOVE OUTPUT-BINARY TO WS-BIN-2                  
+                       PERFORM 3300-XOR        THRU 3300-EXIT                      
                        MOVE WS-BIN-XOR-RESULT TO BINARY-INPUT
                        PERFORM 3250-BIN-TO-NUM THRU 3250-EXIT  
-TEST  *                 DISPLAY 'EXPL = ' DECIMAL-OUTPUT 
                        MOVE DECIMAL-OUTPUT TO WS-REG-B
       *            MODULO 8 -> B
                    WHEN BST
