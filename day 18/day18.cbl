@@ -24,7 +24,7 @@
        01  INPUT-RECORD                          PIC X(5).
 
        WORKING-STORAGE SECTION.
-       01  WS-BEGIN                              PIC X(271)
+       01  WS-BEGIN                              PIC X(27)
            VALUE 'WORKING STORAGE BEGINS HERE'.
 
        01  WS-END-OF-FILE                         PIC X(1).
@@ -36,6 +36,9 @@
        01  WS-START-POS-FOUND                     PIC X(1).
            88 START-POS-FOUND                               VALUE 'Y'.
            88 START-POS-NOT-FOUND                           VALUE 'N'.
+        01  WS-END-REACHED                         PIC X(1).
+            88 END-REACHED                                   VALUE 'Y'.
+            88 END-NOT-REACHED                               VALUE 'N'.
        
        01  WS-DIRECTION                           PIC X(1).
            88 DIR-UP                                        VALUE '^'.
@@ -43,14 +46,14 @@
            88 DIR-LEFT                                      VALUE '<'.
            88 DIR-RIGHT                                     VALUE '>'.
 
-       01  ARR-LENGTH                             PIC 9(2)  VALUE  71.            
+       01  ARR-LENGTH                             PIC 9(2)  VALUE   7.            
        01  WS-MAP-ARR.
-           05 WS-MAP OCCURS 71 TIMES              PIC X(71).
+           05 WS-MAP OCCURS 7 TIMES              PIC X(7).
        01  MAP-ARR-SUB                            PIC 9(2) VALUE 1.
        01  MAP-SUB-CHAR                           PIC 9(2).
 
        01  WS-VISITED-ARR.
-           05 WS-VISITED OCCURS 71 TIMES          PIC X(71).
+           05 WS-VISITED OCCURS 7 TIMES          PIC X(7).
 
       *    STACK FOR LOCATIONS VISITED            
        01  WS-STACK-TABLE.
@@ -82,9 +85,9 @@
 
        01  WS-INPUT.               
            05 IN-ROW                              PIC 9(2).
-           05 IN-COL                              PIC 9(2).     
-  
-       01  WS-PATH-LENGTH                         PIC 9(4).
+           05 IN-COL                              PIC 9(2).    
+
+ 
 
        01  WS-END                                 PIC X(25)
            VALUE 'WORKING STORAGE ENDS HERE'.
@@ -97,9 +100,7 @@
            
            PERFORM 1000-OPEN-FILE             THRU 1000-EXIT
            PERFORM 2000-CONVERT-FILE-TO-ARRAY THRU 2000-EXIT
-               UNTIL END-OF-FILE           
-           PERFORM 3000-TRAVERSE-MAP          THRU 3000-EXIT         
-           PERFORM 8000-DISPLAY-RESULTS       THRU 8000-EXIT
+               UNTIL END-OF-FILE    
            PERFORM 9000-CLOSE-FILE            THRU 9000-EXIT
            .
        0000-EXIT.
@@ -127,8 +128,19 @@
                    SET END-OF-FILE TO TRUE
                NOT AT END          
                    UNSTRING INPUT-RECORD DELIMITED BY ',' INTO IN-COL
-                                                               IN-ROW                                                      
-                   PERFORM 2100-PLACE-NODE THRU 2100-EXIT
+                                                               IN-ROW                                                                                                              
+                   PERFORM 2100-PLACE-NODE  THRU 2100-EXIT                   
+                   MOVE SPACES TO WS-END-REACHED
+                   PERFORM 3000-TRAVERSE-MAP THRU 3000-EXIT
+
+                   IF END-REACHED
+                       CONTINUE
+                   ELSE
+                       PERFORM 8000-DISPLAY-RESULTS THRU 8000-EXIT
+                       SET END-OF-FILE TO TRUE
+                       GO TO 2000-EXIT
+                   END-IF
+
            END-READ
            .
        2000-EXIT.
@@ -150,7 +162,7 @@
 
 
       *****************************************************************
-      * TRAVERSE FROM 1,1 TO   71,71                                    *
+      * TRAVERSE FROM 1,1 TO   7,7                                    *
       *****************************************************************
        3000-TRAVERSE-MAP.
 
@@ -158,20 +170,20 @@
            MOVE 1      TO WS-CURR-NODE-ROW  
                           WS-CURR-NODE-COL
            MOVE SPACES TO WS-VISITED-ARR
+                          WS-STACK-TABLE
+           MOVE 0      TO WS-STACK-CNT
            .
            LOOK-FOR-PATH.       
       *    CHECK IF ON END POINT
-           IF WS-CURR-NODE-ROW EQUALS 71 AND WS-CURR-NODE-COL EQUALS 71
-               IF WS-STACK-CNT LESS WS-PATH-LENGTH OR 
-                  WS-PATH-LENGTH EQUALS 0
-                   MOVE WS-STACK-CNT TO WS-PATH-LENGTH
-               END-IF
-               GO TO POP-STACK
+           IF WS-CURR-NODE-ROW EQUALS 7 AND WS-CURR-NODE-COL EQUALS 7
+               SET END-REACHED TO TRUE
+               GO TO 3000-EXIT
            END-IF         
+
 
       *    ADD NODE TO STACK   
            MOVE WS-CURRENT-NODE TO WS-STACK-IO         
-           PERFORM     71000-STACK-PUSH THRU 71000-EXIT          
+           PERFORM 7000-STACK-PUSH THRU 7000-EXIT               
            MOVE 'Y' TO WS-VISITED(WS-CURR-NODE-ROW)(WS-CURR-NODE-COL:1)
            .
            LOOK-UP.
@@ -223,7 +235,7 @@
            .
            POP-STACK.
            IF WS-STACK-CNT GREATER 0
-               PERFORM 7100-STACK-POP THRU 7100-EXIT    
+               PERFORM 700-STACK-POP THRU 700-EXIT    
                MOVE ' ' TO 
                           WS-VISITED(WS-STACK-IO-ROW)(WS-STACK-IO-COL:1)      
       *    EXIT CONDITION: STACK HAS ONE NODE (STARTING POINT) REMAINING
@@ -231,7 +243,7 @@
                    GO TO 3000-EXIT
                END-IF      
                MOVE WS-STACK-IO TO WS-PRIOR-NODE
-               PERFORM 71200-STACK-PEEK THRU 71200-EXIT
+               PERFORM 7200-STACK-PEEK THRU 7200-EXIT
                MOVE WS-STACK-IO TO WS-CURRENT-NODE
                SUBTRACT WS-PREV-NODE-ROW FROM WS-CURR-NODE-ROW 
                                                  GIVING WS-NODE-DIFF-ROW
@@ -262,17 +274,17 @@
       *****************************************************************
       * PUSH AN ITEM ONTO STACK                                       *
       *****************************************************************
-       71000-STACK-PUSH.
+       7000-STACK-PUSH.
 
            ADD 1 TO WS-STACK-CNT
            MOVE WS-STACK-IO TO WS-STACK-ITEM(WS-STACK-CNT)          
            .
-       71000-EXIT.
+       7000-EXIT.
 
       *****************************************************************
       * POP AN ITEM OFF STACK                                         *
       *****************************************************************
-       7100-STACK-POP.
+       700-STACK-POP.
 
            IF WS-STACK-CNT GREATER 0
                MOVE WS-STACK-ITEM(WS-STACK-CNT) TO WS-STACK-IO
@@ -283,17 +295,17 @@
                PERFORM 9999-ABEND THRU 9999-EXIT
            END-IF
            .
-       7100-EXIT.
+       700-EXIT.
            EXIT.
 
       *****************************************************************
       * PEEK WHICH ITEM IS ON TOP OF STACK                            *
       *****************************************************************
-       71200-STACK-PEEK.
+       7200-STACK-PEEK.
 
            MOVE WS-STACK-ITEM(WS-STACK-CNT) TO WS-STACK-IO
            .
-       71200-EXIT.
+       7200-EXIT.
            EXIT.  
 
       *****************************************************************
@@ -301,7 +313,7 @@
       *****************************************************************
        8000-DISPLAY-RESULTS.
             
-            DISPLAY 'SHORTEST PATH = ' WS-PATH-LENGTH 
+            DISPLAY 'EXIT NO LONGER REACHABLE AFTER ' INPUT-RECORD
            .
        8000-EXIT.
            EXIT.
