@@ -21,7 +21,7 @@
            RECORDING MODE IS F
            LABEL RECORDS ARE STANDARD
            DATA RECORD IS INPUT-RECORD.
-       01  INPUT-RECORD                          PIC X(40).
+       01  INPUT-RECORD                           PIC X(40).
 
        WORKING-STORAGE SECTION.
        01  WS-BEGIN                               PIC X(27)
@@ -30,6 +30,7 @@
            88 END-OF-FILE                                    VALUE 'Y'.
            88 NOT-END-OF-FILE                                VALUE 'N'.
 
+       01  WS-REG-A-START                         PIC 9(20)  VALUE 1.
        01  WS-REG-A                               PIC 9(20).
        01  WS-REG-B                               PIC 9(20).
        01  WS-REG-C                               PIC 9(20).
@@ -64,7 +65,10 @@
        01  WS-BIN-POINTER                         PIC 9(2).
 
        01  WS-POINTER-TARGET                      PIC 9(1).
-       01  WS-OUTPUT                              PIC ZZZZ9.
+       01  WS-OUTPUT                              PIC 9(1).
+
+       01  WS-OUT-STRING                          PIC X(31).    
+       01  WS-OUT-POINTER                         PIC 9(2).
 
 
       *FOR DECIMAL TO BINARY CONVERSION
@@ -124,9 +128,7 @@
                    MOVE SPACES TO WS-REG-INPUT        
                    EVALUATE TRUE
                        WHEN INPUT-RECORD(1:12) EQUALS 'Register A: '
-                           MOVE INPUT-RECORD(13:27) TO WS-REG-INPUT
-                           PERFORM 2100-CONVERT-REGISTER THRU 2100-EXIT
-                           MOVE WS-REG-NUMERIC TO WS-REG-A
+                           MOVE WS-REG-A-START TO WS-REG-A
                        WHEN INPUT-RECORD(1:12) EQUALS 'Register B: '                     
                            MOVE INPUT-RECORD(13:27) TO WS-REG-INPUT
                            PERFORM 2100-CONVERT-REGISTER THRU 2100-EXIT
@@ -167,7 +169,8 @@
        3000-EXECUTE-PROGRAM.
 
            MOVE 1 TO WS-INPUT-POINTER
-
+                     WS-OUT-POINTER
+           MOVE SPACES TO WS-OUT-STRING
            PERFORM UNTIL WS-SOURCE-CODE(WS-INPUT-POINTER:1) EQUALS ' '
                MOVE WS-SOURCE-CODE(WS-INPUT-POINTER:1) TO WS-INSTRUCTION            
                EVALUATE TRUE
@@ -221,7 +224,12 @@
                    WHEN OUT
                        PERFORM 3100-GET-COMBO THRU 3100-EXIT
                        MOVE FUNCTION MOD(WS-COMBO,8) TO WS-OUTPUT
-                       DISPLAY WS-OUTPUT
+                       MOVE WS-OUTPUT TO WS-OUT-STRING(WS-OUT-POINTER:1)
+                       ADD 1 TO WS-OUT-POINTER
+                       IF WS-OUT-POINTER LESS 31
+                           MOVE ',' TO WS-OUT-STRING(WS-OUT-POINTER:1)
+                           ADD 1 TO WS-OUT-POINTER
+                       END-IF
       *            DIVIDES TO B
                    WHEN BDV
                        PERFORM 3100-GET-COMBO THRU 3100-EXIT
@@ -233,6 +241,16 @@
                END-EVALUATE
                ADD 2 TO WS-INPUT-POINTER
            END-PERFORM
+
+           IF WS-OUT-STRING EQUALS WS-SOURCE-CODE
+               DISPLAY 'COPY PRODUCED BY SETTING A TO ' WS-REG-A-START
+           ELSE
+               ADD 1 TO WS-REG-A-START
+               MOVE WS-REG-A-START TO WS-REG-A
+               MOVE 0              TO WS-REG-B
+                                      WS-REG-C
+               GO TO 3000-EXECUTE-PROGRAM
+           END-IF
            .
        3000-EXIT.
            EXIT.
@@ -260,6 +278,7 @@
                WHEN OTHER
                    DISPLAY 'INVALID COMBO OPERAND' 
                            WS-SOURCE-CODE(WS-INPUT-POINTER:1)
+                   PERFORM 9999-ABEND THRU 9999-EXIT
            END-EVALUATE
            .
        3100-EXIT.
